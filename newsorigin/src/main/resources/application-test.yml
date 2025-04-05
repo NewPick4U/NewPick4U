@@ -1,2 +1,36 @@
 server:
   port: 15001
+
+spring:
+  config:
+    import:
+      - file:.env.newsorigin[.properties]
+  datasource:
+    url: ${TEST_DB_URL}
+    username: ${TEST_DB_USERNAME}
+    password: ${TEST_DB_PASSWORD}
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+    open-in-view: false
+    defer-datasource-initialization: true # hibernate가 초기화되기 전 data.sql 실행하는 것을 방지
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100
+        format_sql: true
+app:
+  client:
+    naver:
+      host: ${TEST_NAVER_HOST}
+      collect-news:
+        id: ${TEST_NAVER_COLLECT_NEWS_ID}
+        key: ${TEST_NAVER_COLLECT_NEWS_KEY}
+        path: ${TEST_NAVER_COLLECT_NEWS_PATH}
+        # 최대한 한번에 검색이 많이 되도록 하기 위해 가장 많이 등장하는 단어로 검색
+        search-query: ${TEST_NAVER_COLLECT_NEWS_SEARCH_QUERY}
+        # 정렬 기준 : date(날짜순 내림차순) or sim(정확도 내림차순)
+        search-sort: ${TEST_NAVER_COLLECT_NEWS_SEARCH_SORT}
+        # 한번에 쿼리할 양
+        search-display: ${TEST_NAVER_COLLECT_NEWS_SEARCH_DISPLAY}
