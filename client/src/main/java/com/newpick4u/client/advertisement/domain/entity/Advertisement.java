@@ -1,4 +1,4 @@
-package com.newpick4u.client.client.domain.entity;
+package com.newpick4u.client.advertisement.domain.entity;
 
 import com.newpick4u.common.domain.BaseEntity;
 import jakarta.persistence.Column;
