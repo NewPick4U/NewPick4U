@@ -18,13 +18,12 @@ public class NewsInfoConsumer {
     @KafkaListener(
             topics = "news-info.fct.v1",
             groupId = "news-info-consumer",
-            containerFactory = "newsTagListenerContainerFactory"
+            containerFactory = "newsInfoListenerContainerFactory"
     )
-    public void consume(ConsumerRecord<String, NewsInfoDto> record, Acknowledgment acknowledgment) {
+    public void consume(ConsumerRecord<String, NewsInfoDto> record, Acknowledgment ack) {
         try {
             newsService.saveNewsInfo(record.value());
-            acknowledgment.acknowledge();
-
+            ack.acknowledge();
         } catch (Exception e) {
             log.error("[Kafka] 뉴스 저장 실패 - 메시지: {}", record.value(), e);
         }

@@ -32,7 +32,6 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
-//	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
@@ -46,6 +45,15 @@ dependencies {
 	testImplementation 'org.springframework.kafka:spring-kafka-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testImplementation 'org.awaitility:awaitility:4.2.0'
+	testImplementation 'org.assertj:assertj-core:3.24.2'
+	testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+	// Mockito 확장과 Spring context 기반 단위 테스트
+	testImplementation 'org.mockito:mockito-core'
+	testImplementation 'org.mockito:mockito-junit-jupiter'
+	// Testcontainers Kafka (선택적으로 EmbeddedKafka보다 현실적인 테스트가 필요할 때)
+	testImplementation 'org.testcontainers:kafka'
+	testImplementation 'org.testcontainers:junit-jupiter'
 }
 
 dependencyManagement {
