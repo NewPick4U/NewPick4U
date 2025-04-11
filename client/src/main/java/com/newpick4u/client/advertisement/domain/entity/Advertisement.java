@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -40,10 +41,16 @@ public class Advertisement extends BaseEntity {
   private String url;
   @Column(nullable = false)
   private Long budget;
+  @Column(nullable = false)
+  private Integer pointGrantCount;
+  @Column(nullable = false)
+  private boolean isPointGrantFinished;
+  @Column(nullable = false)
+  private Integer maxPointGrantCount;
 
   @Builder
   private Advertisement(UUID clientId, UUID newsId, String title, String content,
-      AdvertisementType type, String url, Long budget) {
+      AdvertisementType type, String url, Long budget, Integer maxPointGrantCount) {
     this.clientId = clientId;
     this.newsId = newsId;
     this.title = title;
@@ -51,11 +58,14 @@ public class Advertisement extends BaseEntity {
     this.type = type;
     this.url = url;
     this.budget = budget;
+    this.maxPointGrantCount = maxPointGrantCount;
+    this.pointGrantCount = 0;
+    this.isPointGrantFinished = false;
   }
 
 
   public static Advertisement create(UUID clientId, UUID newsId, String title, String content,
-      AdvertisementType type, String url, Long budget) {
+      AdvertisementType type, String url, Long budget, Integer maxPointGrantCount) {
     return Advertisement.builder()
         .clientId(clientId)
         .newsId(newsId)
@@ -64,7 +74,20 @@ public class Advertisement extends BaseEntity {
         .type(type)
         .url(url)
         .budget(budget)
+        .maxPointGrantCount(maxPointGrantCount)
         .build();
+  }
+
+  public void incrementPointGrantCount() {
+    this.pointGrantCount++;
+  }
+
+  public void updateIsPointGrantFinished() {
+    this.isPointGrantFinished = true;
+  }
+
+  public boolean isMaxPointGrantCountEqualToCurrentPointGrantCount() {
+    return Objects.equals(this.maxPointGrantCount, this.pointGrantCount);
   }
 
   @Getter

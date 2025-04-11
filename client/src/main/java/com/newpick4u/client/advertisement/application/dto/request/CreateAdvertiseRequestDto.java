@@ -11,6 +11,7 @@ public record CreateAdvertiseRequestDto(@NotNull UUID clientId,
                                         @NotNull @Size(min = 4, max = 255) String content,
                                         @NotNull AdvertisementType type,
                                         @NotNull @Size(min = 4, max = 255) String url,
-                                        @NotNull Long budget) {
+                                        @NotNull Long budget,
+                                        @NotNull @Size(min = 1, max = 50) Integer maxPointGrantCount) {
 
 }

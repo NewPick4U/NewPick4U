@@ -2,7 +2,8 @@ package com.newpick4u.client.advertisement.infrastructure.jpa;
 
 import com.newpick4u.client.advertisement.domain.entity.Advertisement;
 import com.newpick4u.client.advertisement.domain.repository.AdvertisementRepository;
-import com.newpick4u.client.advertisement.domain.repository.JpaAdvertisementRepository;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class AdvertisementRepositoryImpl implements AdvertisementRepository {
 
-  private final JpaAdvertisementRepository jpaAdvertisementRepository;
+  private final AdvertisementJpaRepository jpaAdvertisementRepository;
 
   @Override
   public Advertisement save(Advertisement advertisement) {
@@ -20,5 +21,10 @@ public class AdvertisementRepositoryImpl implements AdvertisementRepository {
   @Override
   public boolean existsByTitleOrUrl(String title, String url) {
     return jpaAdvertisementRepository.existsByTitleOrUrl(title, url);
+  }
+
+  @Override
+  public Optional<Advertisement> findById(UUID advertisementId) {
+    return jpaAdvertisementRepository.findById(advertisementId);
   }
 }

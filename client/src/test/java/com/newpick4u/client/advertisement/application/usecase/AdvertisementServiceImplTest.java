@@ -1,7 +1,6 @@
 package com.newpick4u.client.advertisement.application.usecase;
 
-
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,13 +42,17 @@ class AdvertisementServiceImplTest {
     // given
     CreateAdvertiseRequestDto request = new CreateAdvertiseRequestDto(
         UUID.randomUUID(), UUID.randomUUID(), "스파르타 코딩클럽 모집", "스파르타1111",
-        AdvertisementType.BANNER, "www.ddd.ttt", 50000000L);
+        AdvertisementType.BANNER, "www.ddd.ttt", 50000000L, 30); // 최대 지급 횟수 30 설정
 
     Advertisement advertisement = Advertisement.create(request.clientId(), request.newsId(),
         request.title(),
-        request.content(), request.type(), request.url(), request.budget());
+        request.content(), request.type(), request.url(), request.budget(),
+        request.maxPointGrantCount());
 
     ReflectionTestUtils.setField(advertisement, "advertisementId", UUID.randomUUID());
+    ReflectionTestUtils.setField(advertisement, "maxPointGrantCount",
+        request.maxPointGrantCount()); // 최대 지급 횟수 설정
+
     GetNewsResponseDto getNewsResponseDto = new GetNewsResponseDto(request.newsId());
     ResponseEntity<ApiResponse<GetNewsResponseDto>> getNewsResponseEntity = new ResponseEntity<>(
         ApiResponse.of(HttpStatus.OK, getNewsResponseDto), HttpStatus.OK);
@@ -71,7 +74,7 @@ class AdvertisementServiceImplTest {
     // given
     CreateAdvertiseRequestDto request = new CreateAdvertiseRequestDto(
         UUID.randomUUID(), UUID.randomUUID(), "스파르타 코딩클럽 모집", "스파르타1111",
-        AdvertisementType.BANNER, "www.ddd.ttt", 50000000L);
+        AdvertisementType.BANNER, "www.ddd.ttt", 50000000L, 30); // 최대 지급 횟수 30 설정
 
     when(newsClient.getNews(request.newsId())).thenThrow(
         AdvertisementException.NewsNotFoundException.class);
@@ -88,7 +91,7 @@ class AdvertisementServiceImplTest {
     // given
     CreateAdvertiseRequestDto request = new CreateAdvertiseRequestDto(
         UUID.randomUUID(), UUID.randomUUID(), "스파르타 코딩클럽 모집", "스파르타1111",
-        AdvertisementType.BANNER, "www.ddd.ttt", 50000000L);
+        AdvertisementType.BANNER, "www.ddd.ttt", 50000000L, 30); // 최대 지급 횟수 30 설정
 
     GetNewsResponseDto getNewsResponseDto = new GetNewsResponseDto(request.newsId());
     ResponseEntity<ApiResponse<GetNewsResponseDto>> getNewsResponseEntity = new ResponseEntity<>(
@@ -96,13 +99,10 @@ class AdvertisementServiceImplTest {
 
     when(newsClient.getNews(request.newsId())).thenReturn(getNewsResponseEntity);
     when(advertisementRepository.existsByTitleOrUrl(request.title(), request.url()))
-        .thenThrow(AdvertisementException.AlreadyExistsTitleOrUrl.class);
+        .thenThrow(AdvertisementException.AlreadyExistsTitleOrUrlException.class);
 
     // when & then
     assertThatThrownBy(() -> advertisementService.createAdvertisement(request))
-        .isInstanceOf(AdvertisementException.AlreadyExistsTitleOrUrl.class);
-
+        .isInstanceOf(AdvertisementException.AlreadyExistsTitleOrUrlException.class);
   }
-
-
 }

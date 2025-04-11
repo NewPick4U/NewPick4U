@@ -1,10 +1,10 @@
-package com.newpick4u.client.advertisement.domain.repository;
+package com.newpick4u.client.advertisement.infrastructure.jpa;
 
 import com.newpick4u.client.advertisement.domain.entity.Advertisement;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface JpaAdvertisementRepository extends JpaRepository<Advertisement, UUID> {
+public interface AdvertisementJpaRepository extends JpaRepository<Advertisement, UUID> {
 
   boolean existsByTitleOrUrl(String title, String url);
 }
