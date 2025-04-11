@@ -3,6 +3,7 @@ package com.newpick4u.tag.infrastructure.jpa;
 import com.newpick4u.tag.domain.criteria.SearchTagCriteria;
 import com.newpick4u.tag.domain.entity.Tag;
 import com.newpick4u.tag.domain.repository.TagRepository;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -30,5 +31,25 @@ public class TagRepositoryImpl implements TagRepository {
   @Override
   public Tag save(Tag tag) {
     return tagJpaRepository.save(tag);
+  }
+
+  @Override
+  public Optional<Tag> findByTagName(String tagName) {
+    return tagJpaRepository.findByTagName(tagName);
+  }
+
+  @Override
+  public void delete(Tag tag) {
+    tagJpaRepository.delete(tag);
+  }
+
+  @Override
+  public List<Tag> findAll() {
+    return tagJpaRepository.findAll();
+  }
+
+  @Override
+  public void deleteAll() {
+    tagJpaRepository.deleteAll();
   }
 }

@@ -2,8 +2,11 @@ server:
   port: 14001
 
 spring:
+  config:
+    import:
+      - file:.env.tag[.properties]
   datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -14,6 +17,39 @@ spring:
       hibernate:
         format_sql: true
         show_sql: true
+
   sql:
     init:
       mode: always
+
+  kafka:
+    tag-topic:
+      topic-name: tag.fct.v1
+    dlq-topic:
+      topic-name: dev.tag.fct.dql.v1
+    bootstrap-servers: "${KAFKA_BOOTSTRAP_SERVERS}"
+    #    producer:
+    #      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+    #      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+
+    consumer:
+      create:
+        group-id: tag-create-consumer
+      delete:
+        group-id: tag-delete-consumer
+      topic:
+        create: "${CREATE_TAG_TOPIC}"
+        delete: "${DELETE_TAG_TOPIC}"
+    #      auto-offset-reset: earliest
+    #      max-poll-records: 20 # 한번에 가져오는 메세지 수
+    #      max-poll-interval-ms: 15000 # 지정한 시간 넘게 poll() 호출 안하면 리밸런싱 발생
+    #      heartbeat-interval-ms: 1000 # 카프카 컨슈머가 살아있다고 주기적으로 브로커에게 응답을 보내는 간격
+    #      session-timeout-ms: 60000 # 브로커가 이 시간동안 응답을 못받으면 해당 컨슈머가 죽었다고 판단 ㅠ -> 파티션 리벨런싱
+    #      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+
+#    listener:
+#      ack-mode: manual_immediate # 수동 커밋, acknowledgment.acknowledge()로 수동 커밋
+logging:
+  level:
+    org.hibernate.orm.jdbc.bind: trace
