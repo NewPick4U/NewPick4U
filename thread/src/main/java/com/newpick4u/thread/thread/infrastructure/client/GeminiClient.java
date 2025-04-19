@@ -34,7 +34,7 @@ public class GeminiClient implements AiClient {
 
   private String buildPrompt(List<String> commentList) {
     String joined = String.join("\n", commentList);
-    return "다음 댓글들을 보고 여론을 요약해줘:\n" + joined;
+    return "다음 댓글을 보고 각 반응별 여론 비율을 결론만 알려줘:\n" + joined;
   }
 
   private String callGeminiApi(String prompt) {

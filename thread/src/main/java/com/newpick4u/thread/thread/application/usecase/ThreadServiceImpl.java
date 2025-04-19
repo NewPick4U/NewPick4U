@@ -6,7 +6,6 @@ import com.newpick4u.thread.thread.application.exception.ThreadException.NotFoun
 import com.newpick4u.thread.thread.domain.entity.Thread;
 import com.newpick4u.thread.thread.domain.entity.ThreadStatus;
 import com.newpick4u.thread.thread.domain.repository.ThreadRepository;
-import com.newpick4u.thread.thread.infrastructure.client.CommentClient;
 import com.newpick4u.thread.thread.infrastructure.client.dto.CommentResponse;
 import java.util.Collections;
 import java.util.Comparator;
@@ -75,6 +74,7 @@ public class ThreadServiceImpl implements ThreadService {
   @Scheduled(fixedDelay = 5 * 60 * 1000)
   @Transactional
   public void createSummaryFromAi() {
+    log.info("createSummaryFromAi Scheduler Start");
     Set<String> openThreadIds = getOpenThreadIdsFromRedis();
 
     // 핫 태그 없을 경우 넘어감
@@ -85,10 +85,12 @@ public class ThreadServiceImpl implements ThreadService {
     for (String threadId : openThreadIds) {
       try {
         // 쓰레드에 달린 댓글들 가져오기
-        ResponseEntity<ApiResponse<CommentResponse>> resposeEntity = commentClient.getAllByThreadId(
+        ResponseEntity<ApiResponse<CommentResponse>> responseEntity = commentClient.getAllByThreadId(
             UUID.fromString(threadId));
-        ApiResponse<CommentResponse> body = resposeEntity.getBody();
-        CommentResponse comments = body.data();
+
+        CommentResponse comments = Objects.requireNonNull(responseEntity.getBody(),
+            "댓글 응답의 body가 null입니다.").data();
+
         if (CollectionUtils.isEmpty(comments.commentList())) {
           log.info("분석할 댓글 없음 [threadId={}]", threadId);
           continue;
@@ -103,10 +105,11 @@ public class ThreadServiceImpl implements ThreadService {
         thread.addSummary(summary);
 
       } catch (Exception e) {
-        log.error("", e);
-        throw new IllegalArgumentException("여론 분석 실패");
+        log.error("여론 분석 실패 [threadId={}]: {}", threadId, e.getMessage(), e);
       }
     }
+
+    log.info("createSummaryFromAi Scheduler End");
   }
 
   private Set<String> getOpenThreadIdsFromRedis() {
@@ -120,6 +123,7 @@ public class ThreadServiceImpl implements ThreadService {
   @Scheduled(fixedDelay = 5 * 60 * 1000)
   @Transactional
   public void saveThread() {
+    log.info("save thread Scheduler start");
     Set<String> hotTags = getHotTagsFromRedis();
     if (hotTags.isEmpty()) {
       return;
@@ -142,6 +146,7 @@ public class ThreadServiceImpl implements ThreadService {
     if (!openThreads.isEmpty()) {
       cacheOpenThreadsToRedis(openThreads);
     }
+    log.info("save thread Scheduler end");
   }
 
   private void cacheOpenThreadsToRedis(List<Thread> openThreads) {

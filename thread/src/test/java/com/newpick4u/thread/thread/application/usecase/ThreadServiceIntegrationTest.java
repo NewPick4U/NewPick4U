@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.newpick4u.thread.thread.domain.entity.Thread;
 import com.newpick4u.thread.thread.domain.entity.ThreadStatus;
 import com.newpick4u.thread.thread.domain.repository.ThreadRepository;
-import com.newpick4u.thread.thread.infrastructure.client.CommentClient;
+import com.newpick4u.thread.thread.infrastructure.client.CommentClientImpl;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -26,7 +26,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 public class ThreadServiceIntegrationTest {
 
   @MockitoBean
-  private CommentClient commentClient;
+  private CommentClientImpl commentClient;
 
   @Autowired
   private RedisTemplate<String, String> redisTemplate;
