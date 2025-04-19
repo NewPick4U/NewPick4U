@@ -3,6 +3,7 @@ package com.newpick4u.newsorigin.newsorigin.infrastructure.jpa;
 import static com.newpick4u.newsorigin.newsorigin.domain.entity.QNewsOrigin.newsOrigin;
 
 import com.newpick4u.newsorigin.newsorigin.domain.entity.NewsOrigin;
+import com.newpick4u.newsorigin.newsorigin.domain.entity.NewsOrigin.Status;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +19,7 @@ public class NewsOriginRepositoryCustomImpl implements NewsOriginRepositoryCusto
   public List<NewsOrigin> getAllByBeforeSentQueue() {
     return queryFactory.selectFrom(newsOrigin)
         .where(
-            newsOrigin.isSentToQueue.eq(false)
+            newsOrigin.status.eq(Status.PENDING)
                 .and(newsOrigin.deletedAt.isNull())
         )
         .fetch();

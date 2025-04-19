@@ -3,6 +3,8 @@ package com.newpick4u.newsorigin.newsorigin.domain.entity;
 import com.newpick4u.common.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -24,13 +26,15 @@ public class NewsOrigin extends BaseEntity {
   @Column(name = "news_origin_id")
   private UUID id;
 
-  @Column(length = 255)
+  @Column(length = 255, unique = true, nullable = false)
   private String url;
 
   @Column(length = 255)
   private String title;
 
-  private Boolean isSentToQueue = Boolean.FALSE;
+  @Column(length = 50)
+  @Enumerated(EnumType.STRING)
+  private Status status;
 
   private LocalDateTime newsPublishedDate;
 
@@ -38,6 +42,7 @@ public class NewsOrigin extends BaseEntity {
     this.title = title;
     this.url = url;
     this.newsPublishedDate = newsPublishedDate;
+    this.status = Status.PENDING;
   }
 
   public static NewsOrigin create(String title, String url, LocalDateTime newsPublishedDate) {
@@ -45,6 +50,16 @@ public class NewsOrigin extends BaseEntity {
   }
 
   public void sentToQueue() {
-    this.isSentToQueue = Boolean.TRUE;
+    this.status = Status.SENDED;
+  }
+
+  public void sendFail() {
+    this.status = Status.FAIL;
+  }
+
+  public enum Status {
+    PENDING,
+    SENDED,
+    FAIL
   }
 }

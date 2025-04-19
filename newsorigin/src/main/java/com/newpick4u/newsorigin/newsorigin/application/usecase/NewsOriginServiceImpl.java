@@ -20,6 +20,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -46,10 +47,19 @@ public class NewsOriginServiceImpl implements NewsOriginService {
           .map(dto -> NewsOrigin.create(dto.title(), dto.url(), dto.publishedDate()))
           .toList();
 
-      // TODO : 중복 기사 제거 로직 추가 예정
+      // 중복 처리를 위한
+      int saveCount = 0;
+      for (NewsOrigin newsOrigin : newsOriginList) {
 
-      List<NewsOrigin> savedNewsOriginList = newsOriginRepository.saveAll(newsOriginList);
-      count = savedNewsOriginList.size();
+        try {
+          newsOriginRepository.save(newsOrigin);
+          saveCount++;
+        } catch (DataIntegrityViolationException e) {
+          log.warn("Already Saved News : url={} ", newsOrigin.getUrl());
+        }
+      }
+      return saveCount;
+
     } catch (JsonProcessingException e) {
       log.error("", e);
     }
@@ -102,13 +112,14 @@ public class NewsOriginServiceImpl implements NewsOriginService {
       ExecutorService threadPool,
       List<NewsOrigin> beforeSentNewsOrigin,
       AtomicInteger updateCount) {
+
     ArrayList<CompletableFuture<Void>> sendTaskList = new ArrayList<>();
     for (NewsOrigin newsOrigin : beforeSentNewsOrigin) {
-      CompletableFuture<Void> sendTask = CompletableFuture.runAsync(() -> {
 
+      CompletableFuture<Void> sendTask = CompletableFuture.runAsync(() -> {
         // 뉴스 원본 기사 획득
         String originNewsBody = getOriginBodyClient.getOriginNewsBody(newsOrigin.getUrl());
-        if (StringUtils.isEmpty(originNewsBody)) {
+        if (StringUtils.isBlank(originNewsBody)) {
           return;
         }
 
@@ -121,6 +132,13 @@ public class NewsOriginServiceImpl implements NewsOriginService {
             newsOrigin.getUrl(),
             newsOrigin.getNewsPublishedDate(),
             extractedMainBody);
+
+        if (StringUtils.isBlank(sendNewOriginDto.body())) {
+          // 기사 본문 파싱 불가 케이스 : 기사 본문이 자바스크립트로 이루어진 케이스
+          newsOrigin.sendFail();
+          newsOriginRepository.save(newsOrigin); // update
+          return;
+        }
 
         String jsonMessage = null;
         try {

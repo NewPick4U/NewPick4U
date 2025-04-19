@@ -22,7 +22,7 @@ spring:
         format_sql: true
   kafka:
     newsorigin-topic:
-      topic-name: test.originnews-info.fct.1
+      topic-name: ${TEST_NEWSORIGIN_TOPIC_NAME}
     # Kafka 클러스터의 진입 지점 역할을 하는 브로커 주소 목록
     # 최소 하나의 브로커 주소만 있어도 클러스터 전체 메타데이터 조회 가능
     bootstrap-servers: ${TEST_SPRING_KAFKA_BOOTSTRAP_SERVERS}

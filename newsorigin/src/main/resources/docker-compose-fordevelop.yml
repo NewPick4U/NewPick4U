@@ -3,7 +3,8 @@ version: '3.8'
 services:
   # Zookeeper: Kafka 브로커가 의존하는 메타데이터 저장소
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
+    image: wurstmeister/zookeeper:latest
+    platform: linux/amd64
     ports:
       - "2181:2181"  # 클라이언트(ZooKeeper CLI 등) 접근용 포트
     environment:
@@ -12,10 +13,13 @@ services:
 
   # Kafka 브로커 서비스
   kafka:
-    image: confluentinc/cp-kafka:7.5.0
+    image: wurstmeister/kafka:latest
+    platform: linux/amd64
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     ports:
-      - "9092:9092"  # Kafka 컨테이너 간 통신용 리스너 포트 (INTERNAL)
-      - "9093:9093"  # 로컬 개발 PC(Spring Boot 등 외부 클라이언트) 접근용 리스너 포트 (EXTERNAL)
+      - "9092:9092"  # 로컬 개발 PC(Spring Boot 등 외부 클라이언트) 접근용 리스너 포트 (EXTERNAL)
+      - "9093:9093"  # Kafka 컨테이너 간 통신용 리스너 포트 (INTERNAL)
     environment:
       # Kafka 브로커 고유 식별자 (클러스터 내 중복 불가)
       KAFKA_BROKER_ID: 1
@@ -24,22 +28,22 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
 
       # 브로커 간 통신에 사용할 리스너 지정 (명시적으로 필요함)
-      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
 
       # 리스너 이름에 따라 어떤 보안 프로토콜을 사용할지 매핑
       # INTERNAL, EXTERNAL 모두 PLAINTEXT 사용 (암호화 없음)
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
 
       # Kafka 브로커가 리스닝할 실제 네트워크 주소
       # - INTERNAL: 도커 내부 네트워크용 (다른 컨테이너에서 접속)
       # - EXTERNAL: 외부(로컬 PC 등)에서 접속
-      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:9093
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:9093,OUTSIDE://0.0.0.0:9092
 
       # Kafka가 외부에 “나에게 이렇게 접속하라”고 광고하는 주소
       # - INTERNAL: 도커 내부에서 사용할 이름(kafka)
       # - EXTERNAL: 로컬 PC에서 도커에 접근할 때 사용하는 특수 도메인
       #   (Docker Desktop / WSL2 환경에서는 host.docker.internal 사용 가능)
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://host.docker.internal:9093
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka:9093,OUTSIDE://host.docker.internal:9092
 
       # 오프셋 토픽 복제 수 (단일 브로커 구성에서는 1로 설정)
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
@@ -47,3 +51,16 @@ services:
     # Kafka는 Zookeeper가 먼저 실행되어야 동작 가능하므로 의존성 명시
     depends_on:
       - zookeeper
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    platform: linux/amd64
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+      KAFKA_CLUSTERS_0_READONLY: "false"
+    depends_on:
+      - zookeeper
+      - kafka

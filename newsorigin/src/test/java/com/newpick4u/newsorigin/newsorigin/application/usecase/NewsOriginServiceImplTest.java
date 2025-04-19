@@ -16,16 +16,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @Slf4j
+@MockitoBean(types = ScheduledAnnotationBeanPostProcessor.class) // @Scheduled 무력화
 @ActiveProfiles("test")
 @SpringBootTest
 class NewsOriginServiceImplTest {
 
   @Autowired
   NewsOriginServiceImpl newsOriginServiceImpl;
-
   @Autowired
   NewsOriginJpaRepository newsOriginJpaRepository;
 
@@ -38,9 +40,7 @@ class NewsOriginServiceImplTest {
     // 불필요한 API 호출을 막기 위한 주석처리
 //    int collectCount = newsOriginServiceImpl.collectOriginNews();
 //
-//    Integer inputCount = Integer.valueOf(searchDisplay);
-//
-//    Assertions.assertEquals(inputCount, collectCount);
+//    Assertions.assertNotEquals(0, collectCount);
   }
 
   @Test
@@ -50,7 +50,7 @@ class NewsOriginServiceImplTest {
     LocalDateTime dateTime = LocalDateTime.of(
         2025, 4, 7, 23, 33, 29, 368_024_800);
     SendNewOriginDto sendNewOriginDto = SendNewOriginDto.of(
-        UUID.randomUUID(),
+        UUID.fromString("0f8c9a76-fba8-4925-be2c-b6633ff38e59"),
         "제목",
         "www.test.com",
         dateTime,
@@ -59,7 +59,7 @@ class NewsOriginServiceImplTest {
     ObjectMapper objectMapper = new ObjectMapper();
     String result = objectMapper.writeValueAsString(sendNewOriginDto);
 
-    String expect = "{\"title\":\"제목\",\"url\":\"www.test.com\",\"publishedDate\":\"2025-04-07T23:33:29.368024800\",\"body\":\"너무 힘들다는 사실이 아닐 수 없습니다.\"}";
+    String expect = "{\"originNewsId\":\"0f8c9a76-fba8-4925-be2c-b6633ff38e59\",\"title\":\"제목\",\"url\":\"www.test.com\",\"publishedDate\":\"2025-04-07T23:33:29.368024800\",\"body\":\"너무 힘들다는 사실이 아닐 수 없습니다.\"}";
     Assertions.assertEquals(expect, result);
   }
 
@@ -125,5 +125,83 @@ class NewsOriginServiceImplTest {
 //    // when
 //    int updateCount = newsOriginServiceImpl.sendNewsOriginMessages();
 //    log.info("updateCount = {}", updateCount);
+  }
+
+  @Test
+  @DisplayName("수집 ~ 전송 통합 테스트")
+  void collectAndSendTest() {
+//    newsOriginServiceImpl.collectOriginNews();
+//    newsOriginServiceImpl.sendNewsOriginMessages();
+  }
+
+  @Test
+  @DisplayName("중복 수집 테스트 : 중복 케이스를 제외하고 정상적으로 등록")
+  void duplicatedCollectTest() {
+
+    // 테스트 수행 시 비즈니스 로직 내부에 다음 코드를 추가해 테스트 진행함
+    //    Thread.sleep(
+    //        (Double.valueOf(Math.random() * System.currentTimeMillis()).longValue() % 10) * 100
+    //    );
+
+    int threadCount = 3;
+//    ExecutorService threadPool = Executors.newFixedThreadPool(threadCount);
+//    CountDownLatch readyLatch = new CountDownLatch(threadCount);
+//    CountDownLatch startLatch = new CountDownLatch(1);
+//    CountDownLatch doneLatch = new CountDownLatch(threadCount);
+//
+//    threadPool.execute(() -> {
+//      readyLatch.countDown();
+//      int saveResult;
+//      try {
+//        startLatch.await();
+//        saveResult = newsOriginServiceImpl.collectOriginNews();
+//      } catch (InterruptedException e) {
+//        throw new RuntimeException(e);
+//      } finally {
+//        doneLatch.countDown();
+//      }
+//      startLatch.countDown();
+//      log.info("saveResult = {}", saveResult);
+//    });
+//
+//    threadPool.execute(() -> {
+//      readyLatch.countDown();
+//      int saveResult;
+//      try {
+//        startLatch.await();
+//        saveResult = newsOriginServiceImpl.collectOriginNews();
+//      } catch (InterruptedException e) {
+//        throw new RuntimeException(e);
+//      } finally {
+//        doneLatch.countDown();
+//      }
+//      startLatch.countDown();
+//      log.info("saveResult = {}", saveResult);
+//    });
+//
+//    threadPool.execute(() -> {
+//      readyLatch.countDown();
+//      int saveResult;
+//      try {
+//        startLatch.await();
+//        saveResult = newsOriginServiceImpl.collectOriginNews();
+//      } catch (InterruptedException e) {
+//        throw new RuntimeException(e);
+//      } finally {
+//        doneLatch.countDown();
+//      }
+//      startLatch.countDown();
+//      log.info("saveResult = {}", saveResult);
+//    });
+//
+//    try {
+//      readyLatch.await();     // 모든 스레드 준비 완료까지 대기
+//      startLatch.countDown(); // 동시에 시작 신호
+//      doneLatch.await();      // 모든 작업 완료까지 대기
+//    } catch (InterruptedException e) {
+//      throw new RuntimeException("Main thread interrupted", e);
+//    } finally {
+//      threadPool.shutdown();
+//    }
   }
 }
