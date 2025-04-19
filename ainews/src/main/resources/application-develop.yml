@@ -23,12 +23,15 @@ spring:
         default_batch_fetch_size: 100
         format_sql: true
 app:
+  tag:
+    max-size: 10
   client:
     gemini:
       key: ${DEVELOP_GEMINI_KEY}
       host: ${DEVELOP_GEMINI_HOST}
       url: ${DEVELOP_GEMINI_URL}
       request-body-base: ${DEVELOP_REQUEST_BODY_BASE}
+      max-request-count-per-min: ${DEVELOP_AVAILABLE_REQUEST_MAX_COUNT_PER_MIN}
 
   kafka:
 
@@ -39,7 +42,7 @@ app:
         bootstrap-servers: ${DEVELOP_KAFKA_PRODUCER_NORMAL_SERVERS} # Kafka 브로커 주소 (복수 개일 경우 쉼표로 구분)
         acks: all                                # 메시지 전송 확인 수준 (0: 확인 안 함, 1: 리더만 확인, all: 모든 ISR 복제본 확인)
         retries: 3                               # 전송 실패 시 재시도 횟수
-        retry-backoff-ms: 5000                   # 재시도 간 대기 시간 (ms)
+        retry-backoff-ms: 1000                   # 재시도 간 대기 시간 (ms)
         enable-idempotence: true                 # 멱등성 활성화 (중복 메시지 전송 방지, 순서 보장에 필수)
         max-in-flight-requests-per-connection: 5 # 커넥션당 병렬 전송 요청 수 (enable-idempotence=true 시 5 이하 권장)
         linger-ms: 20                            # 배치 전송을 위한 지연 시간 (ms) - 일정 시간 동안 데이터를 모아 전송
@@ -56,7 +59,7 @@ app:
         bootstrap-servers: ${DEVELOP_KAFKA_PRODUCER_EXCEPTION_SERVERS}
         acks: all
         retries: 5                               # 일반보다 재시도 횟수를 높게 설정하여 중요 메시지 보존 강화
-        retry-backoff-ms: 5000
+        retry-backoff-ms: 1000
         enable-idempotence: true
         max-in-flight-requests-per-connection: 3
         linger-ms: 20
@@ -77,8 +80,8 @@ app:
       # 일반 Consumer 설정
       normal:
         bootstrap-servers: ${DEVELOP_KAFKA_CONSUMER_NORMAL_SERVERS}  # Kafka 클러스터 주소
-        enable-auto-commit: true                     # 오프셋 자동 커밋 여부 (false 시 수동 커밋 필요)
-        enable-spring-ackmode-immediate: false       # 스프링측 수동 커밋 즉시 적용 : enable-auto-commit 이 false 인경우만 true 로 설정할것
+        enable-auto-commit: false                    # 오프셋 자동 커밋 여부 (false 시 수동 커밋 필요)
+        enable-spring-ackmode-immediate: true        # 스프링측 수동 커밋 즉시 적용 : enable-auto-commit 이 false 인경우만 true 로 설정할것
         auto-offset-reset: latest                    # 초기 오프셋이 없을 경우 처리 기준 (latest: 가장 마지막, earliest: 처음부터)
         max-poll-records: 500                        # poll() 호출 시 한 번에 가져올 최대 레코드 수 (처리량 조절 용도)
         max-poll-interval-ms: 300000                 # poll() 간 최대 허용 시간 (ms), 초과 시 Consumer는 죽은 것으로 간주되어 rebalance 발생
@@ -92,8 +95,8 @@ app:
       # 예외 Consumer 설정 (예: DLQ 처리 전용)
       exception:
         bootstrap-servers: ${DEVELOP_KAFKA_CONSUMER_EXCEPTION_SERVERS}
-        enable-auto-commit: true
-        enable-spring-ackmode-immediate: false       # 스프링측 수동 커밋 즉시 적용 : enable-auto-commit 이 false 인경우만 true 로 설정할것
+        enable-auto-commit: false
+        enable-spring-ackmode-immediate: true       # 스프링측 수동 커밋 즉시 적용 : enable-auto-commit 이 false 인경우만 true 로 설정할것
         auto-offset-reset: latest
         max-poll-records: 500
         max-poll-interval-ms: 300000

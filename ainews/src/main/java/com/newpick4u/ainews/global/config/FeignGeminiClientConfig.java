@@ -16,7 +16,6 @@ public class FeignGeminiClientConfig {
   public RequestInterceptor requestInterceptor() {
     return requestTemplate -> {
       requestTemplate.header(CONTENT_TYPE_KEY, CONTENT_TYPE_VALUE);
-      log.info("requestTemplate.uri = {}", requestTemplate.url().toString());
     };
   }
 }

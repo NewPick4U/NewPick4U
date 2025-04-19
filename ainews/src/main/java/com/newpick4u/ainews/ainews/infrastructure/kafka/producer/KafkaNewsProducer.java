@@ -1,6 +1,7 @@
 package com.newpick4u.ainews.ainews.infrastructure.kafka.producer;
 
-import com.newpick4u.ainews.ainews.application.NewsQueueClient;
+import com.newpick4u.ainews.ainews.application.EventPublisher;
+import com.newpick4u.ainews.ainews.application.EventType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-public class KafkaNewsProducer implements NewsQueueClient {
+public class KafkaNewsProducer implements EventPublisher {
 
   private final KafkaTemplate<String, String> normalKafkaTemplate;
   private final KafkaTemplate<String, String> exceptionKafkaTemplate;
@@ -30,9 +31,32 @@ public class KafkaNewsProducer implements NewsQueueClient {
     this.exceptionKafkaTemplate = exceptionKafkaTemplate;
   }
 
-  // 정상 케이스 전송
   @Override
-  public void sendNews(String message) {
+  public boolean isSupport(EventType eventType) {
+    if (eventType.equals(EventType.NEWS_INFO_SEND)) {
+      return true;
+    }
+    if (eventType.equals(EventType.FAIL_SEND_NEWS)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  @Override
+  public void sendMessage(String message, EventType eventType) {
+    switch (eventType) {
+      case NEWS_INFO_SEND -> {
+        sendNews(message);
+      }
+      case FAIL_SEND_NEWS -> {
+        sendNewsDLQ(message);
+      }
+    }
+  }
+
+  // 정상 케이스 전송
+  private void sendNews(String message) {
     try {
       normalKafkaTemplate.send(newsTopicName, message)
           .thenAccept(result -> {
@@ -49,8 +73,7 @@ public class KafkaNewsProducer implements NewsQueueClient {
   }
 
   // 실패 케이스 전송
-  @Override
-  public void sendNewsDLQ(String message) {
+  private void sendNewsDLQ(String message) {
     try {
       exceptionKafkaTemplate.send(newsExceptionTopicName, message)
           .thenAccept(result -> {

@@ -1,6 +1,7 @@
 package com.newpick4u.ainews.ainews.infrastructure.kafka.producer;
 
-import com.newpick4u.ainews.ainews.application.TagQueueClient;
+import com.newpick4u.ainews.ainews.application.EventPublisher;
+import com.newpick4u.ainews.ainews.application.EventType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-public class KafkaTagProducer implements TagQueueClient {
+public class KafkaTagProducer implements EventPublisher {
 
   private final KafkaTemplate<String, String> normalKafkaTemplate;
   private final KafkaTemplate<String, String> exceptionKafkaTemplate;
@@ -30,9 +31,32 @@ public class KafkaTagProducer implements TagQueueClient {
     this.exceptionKafkaTemplate = exceptionKafkaTemplate;
   }
 
-  // 정상 케이스 전송
   @Override
-  public void sendTag(String message) {
+  public boolean isSupport(EventType eventType) {
+    if (eventType.equals(EventType.TAG_INFO_SEND)) {
+      return true;
+    }
+    if (eventType.equals(EventType.FAIL_SEND_TAG)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  @Override
+  public void sendMessage(String message, EventType eventType) {
+    switch (eventType) {
+      case TAG_INFO_SEND -> {
+        sendTag(message);
+      }
+      case FAIL_SEND_TAG -> {
+        sendTagDLQ(message);
+      }
+    }
+  }
+
+  // 정상 케이스 전송
+  private void sendTag(String message) {
     try {
       normalKafkaTemplate.send(tagTopicName, message)
           .thenAccept(result -> {
@@ -49,8 +73,7 @@ public class KafkaTagProducer implements TagQueueClient {
   }
 
   // 실패 케이스 전송
-  @Override
-  public void sendTagDLQ(String message) {
+  private void sendTagDLQ(String message) {
     try {
       exceptionKafkaTemplate.send(tagExceptionTopicName, message)
           .thenAccept(result -> {

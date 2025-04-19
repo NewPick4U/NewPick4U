@@ -2,9 +2,8 @@ package com.newpick4u.ainews.ainews.application.usecase;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-public interface AiNewsService {
+public interface AiExceptionEventHandleService {
 
-  // 저장
   void processAiNews(String originalMessage);
 
   void saveAndSendTaskByListener(String aiNewsString) throws JsonProcessingException;

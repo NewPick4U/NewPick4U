@@ -3,32 +3,35 @@ package com.newpick4u.ainews.ainews.application.usecase;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.newpick4u.ainews.ainews.application.AiClient;
-import com.newpick4u.ainews.ainews.application.AiQueueClient;
-import com.newpick4u.ainews.ainews.application.NewsQueueClient;
-import com.newpick4u.ainews.ainews.application.TagQueueClient;
+import com.newpick4u.ainews.ainews.application.EventPublisher;
+import com.newpick4u.ainews.ainews.application.EventType;
 import com.newpick4u.ainews.ainews.application.dto.NewsInfoDto;
 import com.newpick4u.ainews.ainews.application.dto.NewsOriginDto;
 import com.newpick4u.ainews.ainews.application.dto.ProceedAiNewsDto;
 import com.newpick4u.ainews.ainews.application.dto.TagInfoDto;
 import com.newpick4u.ainews.ainews.domain.entity.AiNews;
 import com.newpick4u.ainews.ainews.domain.repository.AiNewsRepository;
+import com.newpick4u.ainews.global.exception.NoRemainRequestCountException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @RequiredArgsConstructor
 @Service
-public class AiNewsServiceImpl implements AiNewsService {
+public class AiNewsServiceImpl
+    implements AiNormalEventHandleService, AiExceptionEventHandleService {
 
   private final AiClient aiClient;
   private final AiNewsRepository aiNewsRepository;
-  private final TagQueueClient tagQueueClient;
-  private final NewsQueueClient newsQueueClient;
-  private final AiQueueClient aiQueueClient;
+  private final List<EventPublisher> eventPublishers;
   private final ObjectMapper objectMapper;
+
+  @Value("${app.tag.max-size:10}")
+  private int MAX_TAG_SIZE;
 
   @Override
   public void processAiNews(String originalMessage) {
@@ -36,7 +39,6 @@ public class AiNewsServiceImpl implements AiNewsService {
       NewsOriginDto newsOriginDto = objectMapper.readValue(originalMessage, NewsOriginDto.class);
       ProceedAiNewsDto proceedAiNewsDto = getProceedAiNewsFromApi(originalMessage, newsOriginDto);
       if (proceedAiNewsDto == null) {
-        aiQueueClient.sendApiCallFailDLQ(originalMessage);
         return;
       }
 
@@ -53,7 +55,7 @@ public class AiNewsServiceImpl implements AiNewsService {
 
     AiNews aiNews = createAiNewsByDto(newsOriginDto, proceedAiNewsDto);
 
-    startProcess(aiNews, proceedAiNewsDto.proceedFields().tags());
+    startProcess(aiNews, proceedAiNewsDto.getTagStringListByMaxSize(MAX_TAG_SIZE));
   }
 
   @Override
@@ -87,7 +89,7 @@ public class AiNewsServiceImpl implements AiNewsService {
     } catch (Exception e) {
       String aiNewsJson = objectMapper.writeValueAsString(aiNews);
       log.error("Save Fail -> Send DLQ : {}", aiNewsJson, e);
-      aiQueueClient.saveDBFailDLQ(aiNewsJson);
+      sendMessage(aiNewsJson, EventType.FAIL_SAVE_AINEWS);
       return null;
     }
     return savedAiNews;
@@ -96,7 +98,7 @@ public class AiNewsServiceImpl implements AiNewsService {
   private void sendTagMessage(UUID aiNewsId, List<String> tags) throws JsonProcessingException {
     TagInfoDto tagInfoDto = TagInfoDto.of(tags, aiNewsId);
     String tagsJson = objectMapper.writeValueAsString(tagInfoDto);
-    tagQueueClient.sendTag(tagsJson);
+    sendMessage(tagsJson, EventType.TAG_INFO_SEND);
   }
 
   private void sendNewsMessage(AiNews aiNews) throws JsonProcessingException {
@@ -109,7 +111,7 @@ public class AiNewsServiceImpl implements AiNewsService {
     );
 
     String newsInfoJson = objectMapper.writeValueAsString(newsInfoDto);
-    newsQueueClient.sendNews(newsInfoJson);
+    sendMessage(newsInfoJson, EventType.NEWS_INFO_SEND);
   }
 
   private ProceedAiNewsDto getProceedAiNewsFromApi(String originalMessage,
@@ -118,12 +120,21 @@ public class AiNewsServiceImpl implements AiNewsService {
     ProceedAiNewsDto proceedAiNewsDto;
     try {
       proceedAiNewsDto = aiClient.processByAiApi(newsOriginDto.body());
+
     } catch (JsonProcessingException jpe) {
       throw jpe;
+
+    } catch (NoRemainRequestCountException nrqce) {
+      log.warn(nrqce.getMessage());
+      sendMessage(originalMessage, EventType.FAIL_PROCESS_AINEWS);
+      return null;
+
     } catch (Exception e) {
-      aiQueueClient.sendApiCallFailDLQ(originalMessage);
+      log.error("", e);
+      sendMessage(originalMessage, EventType.FAIL_PROCESS_AINEWS);
       return null;
     }
+
     return proceedAiNewsDto;
   }
 
@@ -133,7 +144,7 @@ public class AiNewsServiceImpl implements AiNewsService {
         UUID.fromString(newsOriginDto.originNewsId()),
         newsOriginDto.url(),
         newsOriginDto.title(),
-        proceedAiNewsDto.proceedFields().getTagsString(),
+        proceedAiNewsDto.proceedFields().getTagsString(MAX_TAG_SIZE),
         proceedAiNewsDto.proceedFields().summary(),
         newsOriginDto.publishedDate(),
         proceedAiNewsDto.originalString()
@@ -147,4 +158,11 @@ public class AiNewsServiceImpl implements AiNewsService {
     return aiNews;
   }
 
+  private void sendMessage(String message, EventType eventType) {
+    this.eventPublishers.stream()
+        .filter(ep -> ep.isSupport(eventType))
+        .findAny()
+        .orElseThrow(() -> new RuntimeException("Not Support EventType : " + eventType.name()))
+        .sendMessage(message, eventType);
+  }
 }

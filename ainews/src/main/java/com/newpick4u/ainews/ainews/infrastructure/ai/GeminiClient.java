@@ -8,6 +8,8 @@ import com.newpick4u.ainews.ainews.application.dto.ProceedAiNewsDto.ProceedField
 import com.newpick4u.ainews.ainews.domain.entity.NewsCategory;
 import com.newpick4u.ainews.ainews.infrastructure.ai.dto.GeminiRequestDto;
 import com.newpick4u.ainews.ainews.infrastructure.ai.dto.GeminiResponseDto;
+import com.newpick4u.ainews.global.exception.NoRemainRequestCountException;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,13 +23,34 @@ public class GeminiClient implements AiClient {
   private final ObjectMapper objectMapper;
   private final GeminiFeignClient geminiFeignClient;
 
+  @Value("${app.client.gemini.max-request-count-per-min:15}")
+  private int MAX_AVAILABLE_REQUEST_COUNT_PER_MIN;
+
   @Value("${app.client.gemini.key}")
   private String API_KEY;
 
   @Value("${app.client.gemini.request-body-base}")
   private String REQUEST_BODY_BASE;
 
-  public ProceedAiNewsDto processByAiApi(String newsBody) throws JsonProcessingException {
+  private int remainAvailableRequestCountPerMin;
+
+  @PostConstruct
+  public void init() {
+    initRemainAvailableRequestCountPerMin();
+  }
+
+  @Override
+  public void initRemainAvailableRequestCountPerMin() {
+    remainAvailableRequestCountPerMin = MAX_AVAILABLE_REQUEST_COUNT_PER_MIN;
+  }
+
+  @Override
+  synchronized public ProceedAiNewsDto processByAiApi(String newsBody)
+      throws JsonProcessingException {
+    if (remainAvailableRequestCountPerMin <= 0) {
+      throw new NoRemainRequestCountException();
+    }
+
     String geminiResponseString = geminiFeignClient.processGemini(
         API_KEY,
         GeminiRequestDto.of(
@@ -36,6 +59,7 @@ public class GeminiClient implements AiClient {
     );
 
     ProceedAiNewsDto proceedAiNewsDto = getProceedAiNewsDto(geminiResponseString);
+    remainAvailableRequestCountPerMin--;
 
     return proceedAiNewsDto;
   }
@@ -43,8 +67,7 @@ public class GeminiClient implements AiClient {
   private ProceedAiNewsDto getProceedAiNewsDto(String geminiResponseString)
       throws JsonProcessingException {
     String parsedAnswerData = getAnswerFromResponse(geminiResponseString, objectMapper);
-
-    // TODO : 방어로직 작성 필요 : Null 케이스
+    
     ProceedFields proceedFields = objectMapper.readValue(parsedAnswerData, ProceedFields.class);
 
     ProceedAiNewsDto proceedAiNewsDto = ProceedAiNewsDto.of(geminiResponseString, proceedFields);

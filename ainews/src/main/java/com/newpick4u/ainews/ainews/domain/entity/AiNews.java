@@ -26,9 +26,10 @@ public class AiNews extends BaseEntity {
   @Column(name = "ai_news_id")
   private UUID id;
 
+  @Column(length = 255, nullable = false, unique = true)
   private UUID originNewsId;
 
-  @Column(length = 255)
+  @Column(length = 255, nullable = false)
   private String url;
 
   @Column(length = 255)

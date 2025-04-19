@@ -2,7 +2,17 @@ package com.newpick4u.ainews.ainews.application.usecase;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.newpick4u.ainews.ainews.application.dto.NewsOriginDto;
 import com.newpick4u.ainews.ainews.infrastructure.jpa.AiNewsJpaRepository;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,7 +20,9 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @Slf4j
 @TestInstance(Lifecycle.PER_CLASS)
@@ -29,6 +41,7 @@ import org.springframework.test.context.ActiveProfiles;
 //        "${app.kafka.producer.exceptional.topic.news-info-dlq.topic-name}",
 //        "${app.kafka.producer.exceptional.topic.tag-info-dlq.topic-name}",
 //    })
+@MockitoBean(types = ScheduledAnnotationBeanPostProcessor.class) // @Scheduled 무력화
 @ActiveProfiles("test")
 @SpringBootTest
 class AiNewsServiceImplTest {
@@ -110,5 +123,46 @@ class AiNewsServiceImplTest {
 //    Assertions.assertEquals(
 //        aiNews.getOriginNewsId(),
 //        UUID.fromString(newsOriginDto.originNewsId()));
+  }
+
+  @Test
+  @DisplayName("연속 로직 호출 테스트")
+  void apiCallTest() throws IOException {
+//    List<NewsOriginDto> messageDtos = readAllConsumerMessages();
+//    List<String> consumeMessages = new ArrayList<>();
+//    for (int i = 0; i < 100; i++) {
+//      NewsOriginDto newsOriginDto = messageDtos.get(i % messageDtos.size());
+//      String String = objectMapper.writeValueAsString(
+//          new NewsOriginDto(UUID.randomUUID().toString(), newsOriginDto.title(),
+//              newsOriginDto.url(),
+//              newsOriginDto.publishedDate(), newsOriginDto.body()));
+//      consumeMessages.add(String);
+//    }
+//    for (String consumeMessage : consumeMessages) {
+//      aiNewsService.processAiNews(consumeMessage);
+//    }
+  }
+
+  public List<NewsOriginDto> readAllConsumerMessages() throws IOException {
+    List<NewsOriginDto> messages = new ArrayList<>();
+
+    Path resourceDir = Paths.get("src/test/resources/consumer-message");
+    try (Stream<Path> pathStream = Files.walk(resourceDir)) {
+      pathStream
+          .filter(Files::isRegularFile)
+          .filter(path -> path.toString().endsWith(".json"))
+          .sorted()
+          .forEach(path -> {
+            try {
+              String content = Files.readString(path, StandardCharsets.UTF_8);
+              NewsOriginDto newsOriginDto = objectMapper.readValue(content, NewsOriginDto.class);
+              messages.add(newsOriginDto);
+            } catch (IOException e) {
+              throw new UncheckedIOException(e);
+            }
+          });
+    }
+
+    return messages;
   }
 }
