@@ -24,7 +24,7 @@ public class ViewCountScheduler {
     private final ViewCountCacheOperator viewCountCacheOperator;
     private final RedisTemplate<String, String> redisTemplate;
     private final NewsRepository newsRepository;
-    private static final String VIEW_COUNT_KEY_PREFIX = "view:";
+    private static final String VIEW_COUNT_KEY_PREFIX = "view";
 
     @Scheduled(fixedDelay = 3600000) // 1시간마다 실행
     public void syncViewCounts() {

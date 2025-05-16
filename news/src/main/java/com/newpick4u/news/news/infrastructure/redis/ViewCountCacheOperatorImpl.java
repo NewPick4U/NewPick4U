@@ -16,7 +16,7 @@ public class ViewCountCacheOperatorImpl implements ViewCountCacheOperator {
 
     private final RedisTemplate<String, String> redisTemplate;
     private static final String USER_VIEW_SET_KEY = "view:user:%s";
-    private static final String VIEW_COUNT_KEY = "view:%s";
+    private static final String VIEW_COUNT_KEY = "view";
     private static final String POPULARITY_ZSET_KEY = "popular";
 
     @Override
@@ -36,13 +36,13 @@ public class ViewCountCacheOperatorImpl implements ViewCountCacheOperator {
 
     @Override
     public void incrementViewCount(UUID newsId) {
-        redisTemplate.opsForValue().increment(String.format(VIEW_COUNT_KEY, newsId));
+        redisTemplate.opsForZSet().incrementScore(VIEW_COUNT_KEY, newsId.toString(), 1);
     }
 
     @Override
     public long getViewCount(UUID newsId) {
-        String value = redisTemplate.opsForValue().get(String.format(VIEW_COUNT_KEY, newsId));
-        return value == null ? 0 : Long.parseLong(value);
+        Double score = redisTemplate.opsForZSet().score(VIEW_COUNT_KEY, newsId.toString());
+        return score == null ? 0 : score.longValue();
     }
 
     @Override
