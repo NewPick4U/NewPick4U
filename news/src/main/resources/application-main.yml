@@ -13,7 +13,7 @@ spring:
     redis:
       host: ${MAIN_REDIS_HOST}
       port: ${MAIN_REDIS_PORT}
-      password: ${REDIS_PASSWORD}
+      password: ${MAIN_REDIS_PASSWORD}
 
   kafka:
     bootstrap-servers: ${MAIN_KAFKA_BOOTSTRAP_SERVERS}
@@ -31,7 +31,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     open-in-view: false
     defer-datasource-initialization: true # hibernate가 초기화되기 전 data.sql 실행하는 것을 방지
     properties:

@@ -1,5 +1,5 @@
 # Dockerfile
-FROM openjdk:17-jdk-slim
+FROM amazoncorretto:17-alpine
 WORKDIR /app
 ENV APP_NAME=news-0.0.1-SNAPSHOT.jar
 COPY build/libs/${APP_NAME} app.jar
